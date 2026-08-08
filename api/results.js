@@ -1,11 +1,10 @@
 // 管理员查看所有提交结果
-// 访问方式: https://你的域名.vercel.app/api/results
+// 支持删除操作: ?pwd=xxx&del=id
 
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
   // 🔐 密码验证
   const password = process.env.RESULTS_PASSWORD;
@@ -62,6 +61,15 @@ export default async function handler(req, res) {
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // 🗑️ 删除操作（POST + ?del=id）
+    if (req.query.del) {
+      const id = req.query.del;
+      const { error } = await supabase.from('submissions').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
+    // 查询所有数据
     const { data, error } = await supabase
       .from('submissions')
       .select('*')
@@ -82,7 +90,8 @@ export default async function handler(req, res) {
       '当你发现有人恶意书评，你感觉评论者是？',
       '当你发现曼波溺水了以后？',
       '三个群的群友全部掉进了水里，你选择？',
-      '你觉得绿帽哥该死吗？'
+      '你觉得绿帽哥该死吗？',
+      '你觉得Shark对小小人鼠是真心的吗？'
     ];
 
     let html = `
@@ -94,13 +103,17 @@ export default async function handler(req, res) {
       body { font-family:"Microsoft YaHei",sans-serif; background:#f5f5f4; padding:20px; color:#333; }
       h1 { color:#b71c1c; margin-bottom:6px; font-size:22px; }
       .count { color:#888; font-size:13px; margin-bottom:20px; }
-      .sub-card { background:#fff; border:1px solid #e0dedb; border-radius:8px; padding:16px; margin-bottom:12px; }
-      .sub-card .time { font-size:11px; color:#999; margin-bottom:8px; }
+      .sub-card { background:#fff; border:1px solid #e0dedb; border-radius:8px; padding:16px; margin-bottom:12px; position:relative; }
+      .sub-card .time { font-size:11px; color:#999; margin-bottom:8px; padding-right:70px; }
       .sub-card table { width:100%; border-collapse:collapse; font-size:13px; }
       .sub-card td { padding:4px 6px; border-bottom:1px solid #f0efe9; }
       .sub-card td:first-child { color:#888; width:36px; text-align:center; }
       .sub-card td:nth-child(2) { color:#555; width:40%; }
       .sub-card td:last-child { font-weight:600; color:#222; }
+      .sugg { margin-top:10px; background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:8px 10px; font-size:12px; color:#8d6e00; }
+      .sugg b { color:#6d4c00; }
+      .del-btn { position:absolute; top:12px; right:12px; background:#b71c1c; color:#fff; border:none; border-radius:5px; padding:4px 10px; font-size:11px; cursor:pointer; }
+      .del-btn:hover { background:#8e1414; }
       .no-data { text-align:center; padding:60px 20px; color:#999; }
       .refresh { display:inline-block; margin-top:10px; padding:8px 20px; background:#0b57d0; color:#fff; text-decoration:none; border-radius:6px; font-size:13px; }
     </style>
@@ -118,7 +131,10 @@ export default async function handler(req, res) {
         var time = row.submitted_at ? new Date(row.submitted_at).toLocaleString('zh-CN') : '未知时间';
         var qqName = row.qq_name || '';
         var qqNumber = row.qq_number || '';
-        html += '<div class="sub-card">';
+        var suggestion = row.suggestion || '';
+        var rowId = row.id || '';
+        html += '<div class="sub-card" id="card-' + rowId + '">';
+        html += '<button class="del-btn" onclick="delRow(\'' + rowId + '\')">✕ 删除</button>';
         html += '<div class="time">#' + (ri + 1) + ' · ' + time + ' · <strong>' + qqName + '</strong> (' + qqNumber + ')</div>';
         html += '<table>';
         if (answers && Array.isArray(answers)) {
@@ -130,10 +146,25 @@ export default async function handler(req, res) {
             html += '<tr><td>' + (qi + 1) + '</td><td>' + qText + '</td><td>' + aText + '</td></tr>';
           });
         }
-        html += '</table></div>';
+        html += '</table>';
+        if (suggestion) {
+          html += '<div class="sugg"><b>💬 意见：</b>' + suggestion.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+        }
+        html += '</div>';
       });
     }
 
+    html += '<script>' +
+      'function delRow(id){' +
+        'if(!confirm("确定删除这条记录吗？"))return;' +
+        'var xhr=new XMLHttpRequest();' +
+        'xhr.open("POST", location.pathname + "?pwd=" + encodeURIComponent("'+inputPwd+'") + "&del=" + id, true);' +
+        'xhr.setRequestHeader("Content-Type","application/json");' +
+        'xhr.onload=function(){ if(xhr.status===200){ location.reload(); } else { alert("删除失败"); } };' +
+        'xhr.onerror=function(){ alert("网络错误"); };' +
+        'xhr.send();' +
+      '}' +
+    '</script>';
     html += '</body></html>';
     res.status(200).send(html);
   } catch (e) {
