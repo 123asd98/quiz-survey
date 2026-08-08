@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "buildCommand": null,
+  "outputDirectory": null,
+  "functions": {
+    "api/*.js": {
+      "memory": 128,
+      "maxDuration": 10
+    }
+  }
+}

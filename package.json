@@ -1,0 +1,8 @@
+{
+  "name": "quiz-survey",
+  "version": "1.0.0",
+  "description": "群聊调查问卷 - 自动收集结果",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}

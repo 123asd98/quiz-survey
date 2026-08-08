@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>群聊问卷调查 · 内有大量恐怖元素</title>
+<style>
+ * { margin:0; padding:0; box-sizing:border-box; }
+ body { font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:#f5f5f4; color:#333; }
+ .gov-banner { background:linear-gradient(180deg,#b71c1c,#c62828); color:#fff; text-align:center; padding:12px 10px; font-size:13px; letter-spacing:2px; }
+ .gov-banner .b1 { font-size:12px; opacity:.9; margin-bottom:3px; }
+ .gov-banner .b2 { font-size:15px; font-weight:800; }
+ .doc-head { text-align:center; padding:30px 16px 6px; }
+ .doc-head h1 { font-size:24px; color:#b71c1c; font-weight:800; letter-spacing:2px; }
+ .doc-head .doc-sub { font-size:12px; color:#777; margin-top:8px; }
+ .doc-head .red-line { width:64px; height:3px; background:#b71c1c; margin:14px auto 0; border-radius:2px; }
+ .doc-head .doc-no { font-size:10px; color:#aaa; margin-top:10px; letter-spacing:1px; }
+ .survey { max-width:600px; margin:0 auto; padding:10px 14px 60px; }
+ .start-card { background:#fff; border:1px solid #e0dedb; border-radius:10px; padding:30px 22px; margin-top:22px; text-align:center; }
+ .start-card p { font-size:14px; line-height:2; color:#555; }
+ .btn-go { display:block; width:100%; max-width:280px; margin:22px auto 0; background:#0b57d0; color:#fff; border:none; border-radius:6px; padding:14px; font-size:16px; font-weight:700; letter-spacing:3px; cursor:pointer; font-family:inherit; }
+ .btn-go:hover { background:#0842a0; }
+ .btn-go:active { transform:scale(.98); }
+ .btn-submit { display:block; width:100%; max-width:280px; margin:22px auto 0; background:#0b57d0; color:#fff; border:none; border-radius:6px; padding:14px; font-size:15px; font-weight:700; letter-spacing:2px; cursor:pointer; font-family:inherit; }
+ .q-card { background:#fff; border:1px solid #e0dedb; border-radius:10px; padding:22px 20px; margin-top:16px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+ .q-card .q-meta { font-size:11px; color:#999; display:flex; justify-content:space-between; margin-bottom:10px; }
+ .q-card .q-meta .q-type { color:#0b57d0; }
+ .q-text { font-size:16px; font-weight:700; color:#222; line-height:1.7; margin-bottom:16px; }
+ .q-opt { display:block; width:100%; text-align:left; background:#fafafa; border:1px solid #e3e1de; border-radius:6px; padding:12px 14px; margin-bottom:9px; font-size:14px; color:#333; cursor:pointer; transition:all .12s; font-family:inherit; }
+ .q-opt:hover { border-color:#0b57d0; background:#f3f7ff; }
+ .q-opt:active { transform:scale(.98); }
+ .q-opt .k { display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:4px; background:#eef1f5; color:#555; font-size:11px; margin-right:10px; font-weight:700; }
+ .q-opt .t { font-family:inherit; }
+ .q-opt.selected { background:#0b57d0 !important; border-color:#0b57d0 !important; color:#fff; }
+ .q-opt.selected .k { background:rgba(255,255,255,.25); color:#fff; }
+ .q-opt.selected .t { color:#fff; }
+ .q-opt.disabled { opacity:.6; cursor:default; }
+ .progress { height:3px; background:#e6e4e1; margin-top:16px; overflow:hidden; border-radius:2px; }
+ .progress .fill { height:100%; background:#0b57d0; width:0; transition:width .35s ease; border-radius:2px; }
+ .gov-foot { text-align:center; font-size:10px; color:#aaa; padding:18px 10px 10px; letter-spacing:1px; line-height:1.9; }
+ .gov-foot .warn-tiny { color:#b71c1c; font-size:10px; margin-top:6px; }
+ .ending { max-width:600px; margin:0 auto; padding:60px 20px; text-align:center; color:#444; }
+ .ending h2 { color:#b71c1c; font-size:21px; letter-spacing:2px; margin-bottom:16px; }
+ .ending p { font-size:14px; line-height:2.2; color:#666; }
+ .ending .tiny { font-size:11px; color:#999; margin-top:34px; font-style:italic; }
+ .ending .btn-go { margin-top:30px; }
+ .toast-msg { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#000; color:#fff; padding:18px 28px; border-radius:10px; font-size:18px; font-weight:700; z-index:99999; text-align:center; letter-spacing:2px; box-shadow:0 8px 32px rgba(0,0,0,.4); animation:toastIn .2s ease; }
+ @keyframes toastIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(.7); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+ .loading-dots:after { content:'...'; animation:dots 1.2s steps(3,end) infinite; }
+ @keyframes dots { 0% { content:'.'; } 33% { content:'..'; } 66% { content:'...'; } }
+</style>
+</head>
+<body>
+
+<div class="gov-banner">
+  <div class="b1">⚠ 警告：本问卷包含大量恐怖元素</div>
+  <div class="b2">群 聊 调 查 问 卷</div>
+</div>
+
+<div class="doc-head">
+  <h1>群聊调查问卷</h1>
+  <div class="doc-sub">为了维护群聊生态 · 特开展本次专项调查 · 请如实作答</div>
+  <div class="red-line"></div>
+  <div class="doc-no">⚠ 内有大量恐怖元素 · 胆小者请勿继续</div>
+</div>
+
+<div class="survey" id="survey">
+  <!-- 由 JS 渲染 -->
+</div>
+
+<div class="gov-foot">
+  ⚠ 内有大量恐怖元素 · 请做好心理准备
+  <div class="warn-tiny">⚠ 本问卷包含大量恐怖元素，答题过程中如有不适请及时停止</div>
+</div>
+
+<script>
+/* =============================================
+   群聊调查问卷 · 整活版
+   无惊吓 · 纯整活 · 放心食用
+   ============================================= */
+
+var QUESTIONS = [
+  { q: '发现有人落水，你应该？', opts: ['立即跳入水中救人', '大声呼救并拨打110', '站在岸边观望', '拍照发朋友圈'] },
+  { q: '群主更新的主要时间是？', opts: ['两年半', '每小时更一章', '远古时期平均一两天一张', '随机'] },
+  { q: '你希望群里面全体小说作家吗？', opts: ['希望', '非常希望', '不希望', '部分就行'] },
+  { q: '瑟瑟大王普遍发？', opts: ['萝莉', '东北雨姐', '猎奇图片', '猎奇视频'] },
+  { q: '群友溺水了，你应该？', opts: ['跟着死', '帮忙书写遗书', '等尸体浮上来以后草', '帮忙'] },
+  { q: '群里面的风气是？', opts: ['关爱啥子', '日常聊天', '涩涩', '催更'] },
+  { q: '当你在平台刷到了群友的小说时？', opts: ['认真阅读', '五星评价', '交流主题', '收藏投币'] },
+  { q: '当你发现有人恶意书评，你感觉评论者是？', opts: ['绿帽子戴了', '刚被女友甩了', '对虚拟人物吃醋了', '傻逼一个'] },
+  { q: '当你发现曼波溺水了以后？', opts: ['救他上来，强迫其更新', '把大运开到水里，让其转生异世界（绷不住了）', '施以援手', '拍照发群里'] },
+  { q: '三个群的群友全部掉进了水里，你选择？', opts: ['救援suAlice', '救援曼波', '救援小小人鼠', '清爽而自然的笑'] },
+  { q: '你觉得绿帽哥该死吗？', opts: ['YES', '确实', 'そうです', '确实如此'] },
+];
+
+var idx = 0;
+var finished = false;
+var answers = [];
+var submitting = false;
+
+function showToast(text) {
+  var toast = document.createElement('div');
+  toast.className = 'toast-msg';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    toast.style.transition = 'opacity .3s';
+    toast.style.opacity = '0';
+    setTimeout(function() {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
+  }, 1500);
+}
+
+function render() {
+  var s = document.getElementById('survey');
+
+  if (idx >= QUESTIONS.length) {
+    s.innerHTML =
+      '<div class="q-card">'+
+        '<div class="q-meta"><span>第 '+(QUESTIONS.length+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">提交确认</span></div>'+
+        '<div class="q-text">以上便是全部题目。<br>确认无误后，请提交答卷。</div>'+
+        '<button class="btn-submit" onclick="doSubmit()" id="submitBtn">📤 提交答卷</button>'+
+      '</div>';
+    return;
+  }
+
+  var q = QUESTIONS[idx];
+  var pct = Math.round(idx / QUESTIONS.length * 100);
+  var html =
+    '<div class="progress"><div class="fill" id="progFill" style="width:'+pct+'%"></div></div>'+
+    '<div class="q-card">'+
+      '<div class="q-meta"><span>第 '+(idx+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">单选题 · 共4项</span></div>'+
+      '<div class="q-text" id="qText">'+q.q+'</div>'+
+      '<div id="optList">';
+  for (var i = 0; i < q.opts.length; i++) {
+    html += '<button class="q-opt" onclick="answer('+i+',this)"><span class="k">'+'ABCD'[i]+'</span><span class="t">'+q.opts[i]+'</span></button>';
+  }
+  html += '</div></div>';
+  s.innerHTML = html;
+}
+
+function answer(i, btn) {
+  if (finished) return;
+
+  var opts = document.querySelectorAll('.q-opt');
+  for (var j = 0; j < opts.length; j++) {
+    opts[j].classList.remove('selected');
+    opts[j].classList.add('disabled');
+  }
+  btn.classList.add('selected');
+  btn.classList.remove('disabled');
+
+  answers[idx] = i;
+
+  /* Q10 特殊逻辑 */
+  if (idx === 9) {
+    var showShark = (i === 2);
+    var noManbo = (i !== 1);
+
+    setTimeout(function() {
+      if (showShark) {
+        showToast('Shark来了');
+      }
+      if (noManbo) {
+        setTimeout(function() {
+          showToast('群主没了，谁更新啊（哭）');
+        }, showShark ? 1800 : 0);
+      }
+    }, 200);
+  }
+
+  idx++;
+  setTimeout(function() {
+    render();
+  }, 300);
+}
+
+function doSubmit() {
+  if (submitting) return;
+  submitting = true;
+
+  var btn = document.getElementById('submitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ 提交中……';
+  }
+
+  /* 收集答案 */
+  var result = [];
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var ans = (answers[i] !== undefined && answers[i] !== null) ? answers[i] : -1;
+    result.push({
+      q: i + 1,
+      question: QUESTIONS[i].q,
+      answer: ans,
+      answerText: ans >= 0 ? QUESTIONS[i].opts[ans] : '(未作答)'
+    });
+  }
+
+  var payload = {
+    answers: result,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent
+  };
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/submit', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      showToast('✅ 提交成功！');
+      var s = document.getElementById('survey');
+      s.innerHTML = '<div class="q-card" style="text-align:center;">' +
+        '<div class="q-text">问卷提交成功！</div>' +
+        '<p style="font-size:14px;color:#666;margin-top:10px;">感谢您的参与，本次共完成 ' + QUESTIONS.length + ' 道题目。</p>' +
+        '<p style="font-size:12px;color:#999;margin-top:6px;">结果已上传，请放心。</p>' +
+        '</div>';
+      setTimeout(function() {
+        renderEnding();
+      }, 800);
+    } else {
+      showToast('❌ 提交失败，请重试');
+      submitting = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '📤 提交答卷';
+      }
+    }
+  };
+  xhr.onerror = function() {
+    showToast('❌ 网络错误，请重试');
+    submitting = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📤 提交答卷';
+    }
+  };
+  xhr.send(JSON.stringify(payload));
+}
+
+function renderEnding() {
+  var s = document.getElementById('survey');
+  s.innerHTML =
+    '<div class="ending">'+
+      '<h2>✅ 问卷提交成功</h2>'+
+      '<p>恭喜你完成了本次群聊调查问卷。</p>'+
+      '<p>以上所有内容均为整活效果，请不必惊慌。</p>'+
+      '<p>感谢参与，祝您在群里玩得愉快。</p>'+
+      '<button class="btn-go" onclick="restartSurvey()">🔄 重新测试</button>'+
+      '<div class="tiny">其实根本没有恐怖元素.jpg</div>'+
+    '</div>';
+}
+
+function restartSurvey() {
+  idx = 0;
+  finished = false;
+  answers = [];
+  submitting = false;
+  render();
+}
+
+/* 初始渲染 */
+(function() {
+  var s = document.getElementById('survey');
+  s.innerHTML =
+    '<div class="start-card">'+
+      '<p>⚠ 警告：本问卷包含<b>大量恐怖元素</b>，<br>胆小者请在群友陪同下作答。</p>'+
+      '<p>本问卷共 '+QUESTIONS.length+' 题 · 单选 · 全部必答</p>'+
+      '<button class="btn-go" onclick="render()">开始调查 →</button>'+
+    '</div>';
+})();
+</script>
+</body>
+</html>
