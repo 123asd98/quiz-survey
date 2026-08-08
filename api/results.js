@@ -77,8 +77,10 @@ export default async function handler(req, res) {
       data.forEach(function(row, ri) {
         var answers = row.answers;
         var time = row.submitted_at ? new Date(row.submitted_at).toLocaleString('zh-CN') : '未知时间';
+        var qqName = row.qq_name || '';
+        var qqNumber = row.qq_number || '';
         html += '<div class="sub-card">';
-        html += '<div class="time">#' + (ri + 1) + ' · ' + time + '</div>';
+        html += '<div class="time">#' + (ri + 1) + ' · ' + time + ' · <strong>' + qqName + '</strong> (' + qqNumber + ')</div>';
         html += '<table>';
         if (answers && Array.isArray(answers)) {
           answers.forEach(function(a, qi) {
