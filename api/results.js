@@ -1,10 +1,17 @@
 // 管理员查看所有提交结果
-// 支持删除操作: ?pwd=xxx&del=id
+// 支持: 删除(?del=id) / 批准(?approve=id) / 回复(?reply=id&text=xxx)
 
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // 处理 OPTIONS 预检
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   // 🔐 密码验证
   const password = process.env.RESULTS_PASSWORD;
@@ -61,10 +68,27 @@ export default async function handler(req, res) {
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // 🗑️ 删除操作（POST + ?del=id）
+    // 🗑️ 删除操作
     if (req.query.del) {
       const id = req.query.del;
       const { error } = await supabase.from('submissions').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
+    // ✅ 批准操作
+    if (req.query.approve) {
+      const id = req.query.approve;
+      const { error } = await supabase.from('submissions').update({ approved: true }).eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ success: true });
+    }
+
+    // 📬 回复操作
+    if (req.query.reply) {
+      const id = req.query.reply;
+      const text = req.query.text || '';
+      const { error } = await supabase.from('submissions').update({ admin_reply: text }).eq('id', id);
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json({ success: true });
     }
@@ -91,7 +115,11 @@ export default async function handler(req, res) {
       '当你发现曼波溺水了以后？',
       '三个群的群友全部掉进了水里，你选择？',
       '你觉得绿帽哥该死吗？',
-      '你觉得Shark对小小人鼠是真心的吗？'
+      '你觉得Shark对小小人鼠是真心的吗？',
+      '你更喜欢叫群主什么？',
+      '你更喜欢叫小小人鼠什么？',
+      '你更喜欢叫我什么？',
+      '你是小小人鼠，你在某天突然感觉被监视了，你决定？'
     ];
 
     let html = `
@@ -112,8 +140,17 @@ export default async function handler(req, res) {
       .sub-card td:last-child { font-weight:600; color:#222; }
       .sugg { margin-top:10px; background:#fff8e1; border:1px solid #ffe082; border-radius:6px; padding:8px 10px; font-size:12px; color:#8d6e00; }
       .sugg b { color:#6d4c00; }
-      .del-btn { position:absolute; top:12px; right:12px; background:#b71c1c; color:#fff; border:none; border-radius:5px; padding:4px 10px; font-size:11px; cursor:pointer; }
-      .del-btn:hover { background:#8e1414; }
+      .admin-box { margin-top:8px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:6px; padding:8px 10px; font-size:12px; color:#2e7d32; }
+      .approved-badge { color:#2e7d32; font-weight:700; }
+      .actions { margin-top:10px; display:flex; gap:8px; flex-wrap:wrap; }
+      .act-btn { border:none; border-radius:5px; padding:5px 12px; font-size:11px; cursor:pointer; color:#fff; }
+      .act-del { background:#b71c1c; }
+      .act-del:hover { background:#8e1414; }
+      .act-appr { background:#2e7d32; }
+      .act-appr:hover { background:#1b5e20; }
+      .act-reply { background:#0b57d0; }
+      .act-reply:hover { background:#0842a0; }
+      .reply-input { width:100%; padding:6px 10px; border:1px solid #e0dedb; border-radius:5px; font-size:12px; margin-top:6px; font-family:inherit; }
       .no-data { text-align:center; padding:60px 20px; color:#999; }
       .refresh { display:inline-block; margin-top:10px; padding:8px 20px; background:#0b57d0; color:#fff; text-decoration:none; border-radius:6px; font-size:13px; }
     </style>
@@ -132,16 +169,17 @@ export default async function handler(req, res) {
         var qqName = row.qq_name || '';
         var qqNumber = row.qq_number || '';
         var suggestion = row.suggestion || '';
+        var adminReply = row.admin_reply || '';
+        var approved = !!row.approved;
         var rowId = row.id || '';
         html += '<div class="sub-card" id="card-' + rowId + '">';
-        html += '<button class="del-btn" onclick="delRow(\'' + rowId + '\')">✕ 删除</button>';
-        html += '<div class="time">#' + (ri + 1) + ' · ' + time + ' · <strong>' + qqName + '</strong> (' + qqNumber + ')</div>';
+        html += '<div class="time">#' + (ri + 1) + ' · ' + time + ' · <strong>' + qqName + '</strong> (' + qqNumber + ')' + (approved ? ' <span class="approved-badge">✅ 已批准</span>' : '') + '</div>';
         html += '<table>';
         if (answers && Array.isArray(answers)) {
           answers.forEach(function(a, qi) {
             var qText = QUESTIONS[qi] || ('Q' + (qi + 1));
             var aText = (a.answer !== undefined && a.answer !== null && a.answer >= 0)
-              ? a.answerText || ('选项' + 'ABCD'[a.answer])
+              ? a.answerText || ('选项' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[a.answer])
               : '<span style="color:#ccc">(未答)</span>';
             html += '<tr><td>' + (qi + 1) + '</td><td>' + qText + '</td><td>' + aText + '</td></tr>';
           });
@@ -150,6 +188,20 @@ export default async function handler(req, res) {
         if (suggestion) {
           html += '<div class="sugg"><b>💬 意见：</b>' + suggestion.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
         }
+        if (adminReply) {
+          html += '<div class="admin-box">📬 <b>已回复：</b>' + adminReply.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+        }
+        html += '<div class="actions">';
+        html += '<button class="act-btn act-del" onclick="delRow(\'' + rowId + '\')">✕ 删除</button>';
+        if (!approved) {
+          html += '<button class="act-btn act-appr" onclick="approveRow(\'' + rowId + '\')">✅ 批准</button>';
+        }
+        html += '</div>';
+        html += '<div class="admin-box" style="background:#e3f2fd;border-color:#90caf9;color:#0b57d0;">';
+        html += '<b>📬 回复意见：</b>';
+        html += '<input class="reply-input" id="reply-' + rowId + '" placeholder="输入回复内容，回复后该用户下次填写会看到">';
+        html += '<button class="act-btn act-reply" style="margin-top:6px;" onclick="replyRow(\'' + rowId + '\')">发送回复</button>';
+        html += '</div>';
         html += '</div>';
       });
     }
@@ -158,9 +210,25 @@ export default async function handler(req, res) {
       'function delRow(id){' +
         'if(!confirm("确定删除这条记录吗？"))return;' +
         'var xhr=new XMLHttpRequest();' +
-        'xhr.open("POST", location.pathname + "?pwd=" + encodeURIComponent("'+inputPwd+'") + "&del=" + id, true);' +
-        'xhr.setRequestHeader("Content-Type","application/json");' +
+        'xhr.open("GET", location.pathname + "?pwd=" + encodeURIComponent("'+inputPwd+'") + "&del=" + id, true);' +
         'xhr.onload=function(){ if(xhr.status===200){ location.reload(); } else { alert("删除失败"); } };' +
+        'xhr.onerror=function(){ alert("网络错误"); };' +
+        'xhr.send();' +
+      '}' +
+      'function approveRow(id){' +
+        'if(!confirm("批准这条提议？批准后该用户下次填写会看到「您的想法被加入了」"))return;' +
+        'var xhr=new XMLHttpRequest();' +
+        'xhr.open("GET", location.pathname + "?pwd=" + encodeURIComponent("'+inputPwd+'") + "&approve=" + id, true);' +
+        'xhr.onload=function(){ if(xhr.status===200){ location.reload(); } else { alert("批准失败"); } };' +
+        'xhr.onerror=function(){ alert("网络错误"); };' +
+        'xhr.send();' +
+      '}' +
+      'function replyRow(id){' +
+        'var text=document.getElementById("reply-"+id).value;' +
+        'if(!text){ alert("请输入回复内容"); return; }' +
+        'var xhr=new XMLHttpRequest();' +
+        'xhr.open("GET", location.pathname + "?pwd=" + encodeURIComponent("'+inputPwd+'") + "&reply=" + id + "&text=" + encodeURIComponent(text), true);' +
+        'xhr.onload=function(){ if(xhr.status===200){ location.reload(); } else { alert("回复失败"); } };' +
         'xhr.onerror=function(){ alert("网络错误"); };' +
         'xhr.send();' +
       '}' +
