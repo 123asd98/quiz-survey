@@ -91,6 +91,7 @@ var QUESTIONS = [
   { q: '当你发现曼波溺水了以后？', opts: ['救他上来，强迫其更新', '把大运开到水里，让其转生异世界（绷不住了）', '施以援手', '拍照发群里'] },
   { q: '三个群的群友全部掉进了水里，你选择？', opts: ['救援suAlice', '救援曼波', '救援小小人鼠', '清爽而自然的笑'] },
   { q: '你觉得绿帽哥该死吗？', opts: ['YES', '确实', 'そうです', '确实如此'] },
+  { q: '你觉得Shark对小小人鼠是真心的吗？', opts: ['肯定是的', '是的', '不像', '纯正活的吧？'] },
 ];
 
 var idx = 0;
@@ -119,27 +120,49 @@ function startSurvey() {
   var qqInput = document.getElementById('inputQQ');
   var ok = true;
 
-  if (!nameInput.value || nameInput.value.trim() === '') {
+  // 检测QQ名称
+  var name = nameInput.value.trim();
+  if (!name) {
     nameInput.classList.add('error');
+    ok = false;
+  } else if (name.length > 20) {
+    nameInput.classList.add('error');
+    showToast('⚠ QQ名称太长了吧，缩到20字以内');
+    ok = false;
+  } else if (/[<>{}\\]/g.test(name)) {
+    nameInput.classList.add('error');
+    showToast('⚠ QQ名称不能包含特殊符号');
     ok = false;
   } else {
     nameInput.classList.remove('error');
   }
 
-  if (!qqInput.value || qqInput.value.trim() === '') {
+  // 检测QQ号
+  var qq = qqInput.value.trim();
+  if (!qq) {
     qqInput.classList.add('error');
+    ok = false;
+  } else if (!/^\d+$/.test(qq)) {
+    qqInput.classList.add('error');
+    showToast('⚠ QQ号只能是纯数字');
+    ok = false;
+  } else if (qq.length < 5 || qq.length > 12) {
+    qqInput.classList.add('error');
+    showToast('⚠ QQ号长度不对，正常5~12位');
     ok = false;
   } else {
     qqInput.classList.remove('error');
   }
 
   if (!ok) {
-    showToast('⚠ 请填写QQ名称和QQ号');
+    if (nameInput.classList.contains('error') && qqInput.classList.contains('error')) {
+      showToast('⚠ 请正确填写QQ名称和QQ号');
+    }
     return;
   }
 
-  qqName = nameInput.value.trim();
-  qqNumber = qqInput.value.trim();
+  qqName = name;
+  qqNumber = qq;
   render();
 }
 
@@ -151,6 +174,10 @@ function render() {
       '<div class="q-card">'+
         '<div class="q-meta"><span>第 '+(QUESTIONS.length+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">提交确认</span></div>'+
         '<div class="q-text">以上便是全部题目。<br>确认无误后，请提交答卷。</div>'+
+        '<div style="margin-top:14px;text-align:left;">'+
+          '<label class="info-label" style="margin-bottom:6px;">💬 意见反馈（选填——想新增题目或吐槽都可以）</label>'+
+          '<textarea id="suggestionInput" style="width:100%;padding:12px 14px;border:1px solid #e0dedb;border-radius:6px;font-size:14px;font-family:inherit;background:#fafafa;outline:none;resize:vertical;min-height:70px;transition:border .15s;" placeholder="写下你的意见或建议……" onfocus="this.style.borderColor=\'#0b57d0\';this.style.background=\'#fff\'" onblur="this.style.borderColor=\'#e0dedb\';this.style.background=\'#fafafa\'"></textarea>'+
+        '</div>'+
         '<button class="btn-submit" onclick="doSubmit()" id="submitBtn">📤 提交答卷</button>'+
       '</div>';
     return;
@@ -229,10 +256,14 @@ function doSubmit() {
     });
   }
 
+  var suggestionEl = document.getElementById('suggestionInput');
+  var suggestion = suggestionEl ? suggestionEl.value.trim() : '';
+
   var payload = {
     qqName: qqName,
     qqNumber: qqNumber,
     answers: result,
+    suggestion: suggestion,
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent
   };
