@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { answers, timestamp, userAgent, qqName, qqNumber } = req.body;
+    const { answers, timestamp, userAgent, qqName, qqNumber, suggestion } = req.body;
 
     if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({ error: '数据格式错误' });
@@ -47,6 +47,7 @@ export default async function handler(req, res) {
           qq_name: qqName,
           qq_number: qqNumber,
           answers: answers,
+          suggestion: suggestion || '',
           submitted_at: timestamp || new Date().toISOString(),
           user_agent: userAgent || ''
         }
