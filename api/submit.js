@@ -18,10 +18,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { answers, timestamp, userAgent } = req.body;
+    const { answers, timestamp, userAgent, qqName, qqNumber } = req.body;
 
     if (!answers || !Array.isArray(answers)) {
       return res.status(400).json({ error: '数据格式错误' });
+    }
+
+    if (!qqName || !qqNumber) {
+      return res.status(400).json({ error: '请填写QQ名称和QQ号' });
     }
 
     // 从环境变量读取 Supabase 配置
@@ -40,6 +44,8 @@ export default async function handler(req, res) {
       .from('submissions')
       .insert([
         {
+          qq_name: qqName,
+          qq_number: qqNumber,
           answers: answers,
           submitted_at: timestamp || new Date().toISOString(),
           user_agent: userAgent || ''
