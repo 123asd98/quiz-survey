@@ -7,6 +7,45 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
+  // 🔐 密码验证
+  const password = process.env.RESULTS_PASSWORD;
+  const inputPwd = req.query.pwd || '';
+
+  if (password && inputPwd !== password) {
+    return res.status(200).send(`
+      <html><head><meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>密码验证</title>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:"Microsoft YaHei",sans-serif; background:#f5f5f4; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+        .box { background:#fff; border:1px solid #e0dedb; border-radius:10px; padding:32px 24px; text-align:center; max-width:360px; width:100%; }
+        .box h2 { color:#b71c1c; margin-bottom:12px; font-size:18px; }
+        .box p { color:#666; font-size:13px; margin-bottom:20px; }
+        .box input { width:100%; padding:12px 14px; border:1px solid #e0dedb; border-radius:6px; font-size:14px; outline:none; margin-bottom:14px; }
+        .box input:focus { border-color:#0b57d0; }
+        .box button { width:100%; padding:12px; background:#0b57d0; color:#fff; border:none; border-radius:6px; font-size:14px; cursor:pointer; }
+        .box .err { color:#b71c1c; font-size:12px; margin-top:10px; }
+      </style>
+      </head><body>
+      <div class="box">
+        <h2>🔒 问卷结果</h2>
+        <p>请输入管理密码查看</p>
+        <input type="password" id="pwdInput" placeholder="输入密码" onkeydown="if(event.key==='Enter')check()">
+        <button onclick="check()">验证</button>
+        <div class="err" id="errMsg"></div>
+      </div>
+      <script>
+        function check() {
+          var pwd = document.getElementById('pwdInput').value;
+          if (!pwd) return;
+          location.href = location.pathname + '?pwd=' + encodeURIComponent(pwd);
+        }
+      </script>
+      </body></html>
+    `);
+  }
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_KEY;
 
