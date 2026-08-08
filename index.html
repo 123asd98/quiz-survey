@@ -92,6 +92,10 @@ var QUESTIONS = [
   { q: '三个群的群友全部掉进了水里，你选择？', opts: ['救援suAlice', '救援曼波', '救援小小人鼠', '清爽而自然的笑'] },
   { q: '你觉得绿帽哥该死吗？', opts: ['YES', '确实', 'そうです', '确实如此'] },
   { q: '你觉得Shark对小小人鼠是真心的吗？', opts: ['肯定是的', '是的', '不像', '纯正活的吧？'] },
+  { q: '你更喜欢叫群主什么？', opts: ['群主', '作者', '曼波～', '老大', '宝宝（包括谐音）'] },
+  { q: '你更喜欢叫小小人鼠什么？', opts: ['宝宝（包括谐音）', '呆呆兽', '木乃伊', '管理员', '小小人鼠'] },
+  { q: '你更喜欢叫我什么？', opts: ['爱丽丝', 'suAlice', '管理员', '宝宝（包括谐音）'] },
+  { q: '你是小小人鼠，你在某天突然感觉被监视了，你决定？', opts: ['调查', '不理'] },
 ];
 
 var idx = 0;
@@ -100,6 +104,8 @@ var answers = [];
 var submitting = false;
 var qqName = '';
 var qqNumber = '';
+var showApprovedMsg = false;
+var adminReply = '';
 
 function showToast(text) {
   var toast = document.createElement('div');
@@ -163,17 +169,39 @@ function startSurvey() {
 
   qqName = name;
   qqNumber = qq;
-  render();
+
+  // 检查是否有批准/回复
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/check?qq=' + encodeURIComponent(qq), true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        showApprovedMsg = data.approved || false;
+        adminReply = data.reply || '';
+      } catch(e) {}
+    }
+    render();
+  };
+  xhr.onerror = function() { render(); };
+  xhr.send();
 }
 
 function render() {
   var s = document.getElementById('survey');
 
   if (idx >= QUESTIONS.length) {
+    var extraMsg = '';
+    if (adminReply) {
+      extraMsg += '<div style="margin-top:14px;text-align:left;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 12px;font-size:13px;color:#2e7d32;">📬 <b>管理员回复：</b>' + adminReply.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+    } else if (showApprovedMsg) {
+      extraMsg += '<div style="margin-top:14px;text-align:left;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 12px;font-size:13px;color:#2e7d32;">✅ <b>您的想法被加入了！</b></div>';
+    }
     s.innerHTML =
       '<div class="q-card">'+
         '<div class="q-meta"><span>第 '+(QUESTIONS.length+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">提交确认</span></div>'+
         '<div class="q-text">以上便是全部题目。<br>确认无误后，请提交答卷。</div>'+
+        extraMsg +
         '<div style="margin-top:14px;text-align:left;">'+
           '<label class="info-label" style="margin-bottom:6px;">💬 意见反馈（选填——想新增题目或吐槽都可以）</label>'+
           '<textarea id="suggestionInput" style="width:100%;padding:12px 14px;border:1px solid #e0dedb;border-radius:6px;font-size:14px;font-family:inherit;background:#fafafa;outline:none;resize:vertical;min-height:70px;transition:border .15s;" placeholder="写下你的意见或建议……" onfocus="this.style.borderColor=\'#0b57d0\';this.style.background=\'#fff\'" onblur="this.style.borderColor=\'#e0dedb\';this.style.background=\'#fafafa\'"></textarea>'+
@@ -188,11 +216,12 @@ function render() {
   var html =
     '<div class="progress"><div class="fill" id="progFill" style="width:'+pct+'%"></div></div>'+
     '<div class="q-card">'+
-      '<div class="q-meta"><span>第 '+(idx+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">单选题 · 共4项</span></div>'+
+      '<div class="q-meta"><span>第 '+(idx+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">单选题 · 共'+q.opts.length+'项</span></div>'+
       '<div class="q-text" id="qText">'+q.q+'</div>'+
       '<div id="optList">';
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (var i = 0; i < q.opts.length; i++) {
-    html += '<button class="q-opt" onclick="answer('+i+',this)"><span class="k">'+'ABCD'[i]+'</span><span class="t">'+q.opts[i]+'</span></button>';
+    html += '<button class="q-opt" onclick="answer('+i+',this)"><span class="k">'+letters[i]+'</span><span class="t">'+q.opts[i]+'</span></button>';
   }
   html += '</div></div>';
   s.innerHTML = html;
@@ -226,6 +255,15 @@ function answer(i, btn) {
         }, showShark ? 1800 : 0);
       }
     }, 200);
+  }
+
+  /* Q16 特殊逻辑 */
+  if (idx === 15) {
+    if (i === 0) {
+      setTimeout(function() {
+        showToast('原来是一只Shark');
+      }, 200);
+    }
   }
 
   idx++;
@@ -321,6 +359,8 @@ function restartSurvey() {
   finished = false;
   answers = [];
   submitting = false;
+  showApprovedMsg = false;
+  adminReply = '';
   render();
 }
 
