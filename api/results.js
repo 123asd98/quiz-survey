@@ -104,6 +104,7 @@ export default async function handler(req, res) {
     }
 
     const QUESTIONS = [
+      '您所梦见的爱丽丝是？',
       '发现有人落水，你应该？',
       '群主更新的主要时间是？',
       '你希望群里面全体小说作家吗？',
