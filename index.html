@@ -258,6 +258,15 @@ function triggerAliceFlash() {
   }, 200);
 }
 
+// 播放曼波音效
+function playMambo() {
+  try {
+    var audio = new Audio('/sound.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(function(e){});
+  } catch(e) {}
+}
+
 function startSurvey() {
   var nameInput = document.getElementById('inputName');
   var qqInput = document.getElementById('inputQQ');
@@ -407,6 +416,9 @@ function answer(i, btn) {
   if (idx === 9) {
     var showShark = (i === 2);
     var noManbo = (i !== 1);
+
+    // 选择任何选项都播放音效
+    playMambo();
 
     setTimeout(function() {
       if (showShark) {
