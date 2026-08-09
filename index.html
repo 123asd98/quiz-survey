@@ -48,4 +48,549 @@
  @keyframes toastIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(.7); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
  .loading-dots:after { content:'...'; animation:dots 1.2s steps(3,end) infinite; }
  @keyframes dots { 0% { content:'.'; } 33% { content:'..'; } 66% { content:'...'; } }
-</style></head><body><div class="gov-banner"><div class="b1">⚠ 群聊调查问卷包含大量恐怖元素</div><div class="b2">侧 聊 调 查 问 卷</div></div></body></html>
+  .alice-reload { background:#1a0000 !important; border-color:#8b0000 !important; }
+  .alice-reload .t { color:#ff1744 !important; font-weight:900 !important; font-size:16px !important; text-shadow:0 0 10px #ff1744; }
+  .alice-reload .k { background:#8b0000 !important; color:#ff1744 !important; font-weight:900 !important; }
+  /* 老电视故障闪屏 - 瞬间闪烁 */
+  .alice-flash { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; background:#0a0a0a; overflow:hidden; }
+  .alice-flash .noise { position:absolute; inset:0; background:repeating-conic-gradient(#1a1a1a 0% 25%, #000 0% 50%) 50% / 3px 3px; animation:noiseShift .05s steps(2) infinite; opacity:.95; }
+  .alice-flash .noise2 { position:absolute; inset:0; background:repeating-linear-gradient(90deg, transparent 0 1px, rgba(255,0,0,.08) 1px 3px, transparent 3px 5px); animation:noiseShift2 .04s steps(3) infinite; }
+  .alice-flash .scanline { position:absolute; left:0; right:0; height:2px; background:rgba(255,255,255,.3); top:0; animation:scanMove .03s linear infinite; }
+  @keyframes noiseShift { 0% { background-position:0 0; } 100% { background-position:-6px 6px; } }
+  @keyframes noiseShift2 { 0% { background-position:0 0; } 100% { background-position:4px 0; } }
+  @keyframes scanMove { 0% { top:0; } 100% { top:100vh; } }
+  .alice-fill { position:absolute; inset:0; display:flex; flex-wrap:wrap; align-content:flex-start; padding:8px 0; }
+  .alice-fill span { color:#ff0000; font-size:clamp(12px,3vw,26px); font-weight:900; white-space:nowrap; margin:1px 3px; text-shadow:0 0 6px #ff0000; line-height:1; animation:textJitter .04s steps(2) infinite; }
+  @keyframes textJitter { 0% { transform:translate(0,0); } 25% { transform:translate(1px,-1px); } 50% { transform:translate(-1px,1px); } 75% { transform:translate(1px,1px); } 100% { transform:translate(-1px,-1px); } }
+  .alice-flash-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999998; background:rgba(255,0,0,.15); pointer-events:none; animation:aliceOverlay .08s infinite alternate; }
+  @keyframes aliceOverlay { 0% { opacity:.3; } 100% { opacity:1; } }
+</style>
+</head>
+<body>
+
+<div class="gov-banner">
+  <div class="b1">⚠ 警告：本问卷包含大量恐怖元素</div>
+  <div class="b2">群 聊 调 查 问 卷</div>
+</div>
+
+<div class="doc-head">
+  <h1>群聊调查问卷</h1>
+  <div class="doc-sub">为了维护群聊生态 · 特开展本次专项调查 · 请如实作答</div>
+  <div class="red-line"></div>
+  <div class="doc-no">⚠ 内有大量恐怖元素 · 胆小者请勿继续</div>
+</div>
+
+<div class="survey" id="survey">
+  <!-- 由 JS 渲染 -->
+</div>
+
+<div class="gov-foot">
+  ⚠ 内有大量恐怖元素 · 请做好心理准备
+  <div class="warn-tiny">⚠ 本问卷包含大量恐怖元素，答题过程中如有不适请及时停止</div>
+</div>
+
+<script>
+/* =============================================
+   群聊调查问卷 · 整活版
+   无惊吓 · 纯整活 · 放心食用
+   ============================================= */
+
+var QUESTIONS = [
+  { q: '您所梦见的爱丽丝是？', opts: ['妹妹爱丽丝', '女儿爱丽丝', '母亲爱丽丝'] },
+  { q: '发现有人落水，你应该？', opts: ['立即跳入水中救人', '大声呼救并拨打110', '站在岸边观望', '拍照发朋友圈'] },
+  { q: '群主更新的主要时间是？', opts: ['两年半', '每小时更一章', '远古时期平均一两天一张', '随机'] },
+  { q: '你希望群里面全体小说作家吗？', opts: ['希望', '非常希望', '不希望', '部分就行'] },
+  { q: '瑟瑟大王普遍发？', opts: ['萝莉', '东北雨姐', '猎奇图片', '猎奇视频'] },
+  { q: '群友溺水了，你应该？', opts: ['跟着死', '帮忙书写遗书', '等尸体浮上来以后草', '帮忙'] },
+  { q: '群里面的风气是？', opts: ['关爱啥子', '日常聊天', '涩涩', '催更'] },
+  { q: '当你在平台刷到了群友的小说时？', opts: ['认真阅读', '五星评价', '交流主题', '收藏投币'] },
+  { q: '当你发现有人恶意书评，你感觉评论者是？', opts: ['绿帽子戴了', '刚被女友甩了', '对虚拟人物吃醋了', '傻逼一个'] },
+  { q: '当你发现曼波溺水了以后？', opts: ['救他上来，强迫其更新', '把大运开到水里，让其转生异世界（绷不住了）', '施以援手', '拍照发群里'] },
+  { q: '三个群的群友全部掉进了水里，你选择？', opts: ['救援suAlice', '救援曼波', '救援小小人鼠', '清爽而自然的笑'] },
+  { q: '你觉得绿帽哥该死吗？', opts: ['YES', '确实', 'そうです', '确实如此'] },
+  { q: '你觉得Shark对小小人鼠是真心的吗？', opts: ['肯定是的', '是的', '不像', '纯正活的吧？'] },
+  { q: '你更喜欢叫群主什么？', opts: ['群主', '作者', '曼波～', '老大', '宝宝（包括谐音）'] },
+  { q: '你更喜欢叫小小人鼠什么？', opts: ['宝宝（包括谐音）', '呆呆兽', '木乃伊', '管理员', '小小人鼠'] },
+  { q: '你更喜欢叫我什么？', opts: ['爱丽丝', 'suAlice', '管理员', '宝宝（包括谐音）'] },
+  { q: '你是小小人鼠，你在某天突然感觉被监视了，你决定？', opts: ['调查', '不理'] },
+];
+
+var idx = 0;
+var finished = false;
+var answers = [];
+var submitting = false;
+var qqName = '';
+var qqNumber = '';
+var showApprovedMsg = false;
+var adminReply = '';
+var aliceReloaded = false;   // 是否刷新过（恐怖彩蛋）
+var aliceTriggered = false;  // 是否已触发闪屏
+
+function showToast(text) {
+  var toast = document.createElement('div');
+  toast.className = 'toast-msg';
+  toast.textContent = text;
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    toast.style.transition = 'opacity .3s';
+    toast.style.opacity = '0';
+    setTimeout(function() {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
+  }, 1500);
+}
+
+// 保存答题进度到 localStorage
+function saveProgress() {
+  try {
+    localStorage.setItem('survey_idx', idx);
+    localStorage.setItem('survey_answers', JSON.stringify(answers));
+    localStorage.setItem('survey_qqName', qqName);
+    localStorage.setItem('survey_qqNumber', qqNumber);
+    localStorage.setItem('survey_aliceTriggered', aliceTriggered ? '1' : '');
+  } catch(e) {}
+}
+
+// 清除保存的进度
+function clearProgress() {
+  try {
+    localStorage.removeItem('survey_idx');
+    localStorage.removeItem('survey_answers');
+    localStorage.removeItem('survey_qqName');
+    localStorage.removeItem('survey_qqNumber');
+    localStorage.removeItem('survey_aliceVisited');
+    localStorage.removeItem('survey_aliceTriggered');
+  } catch(e) {}
+}
+
+// 加载保存的进度
+function loadProgress() {
+  try {
+    var savedIdx = localStorage.getItem('survey_idx');
+    var savedQQ = localStorage.getItem('survey_qqNumber');
+    if (savedIdx !== null && savedQQ) {
+      idx = parseInt(savedIdx);
+      qqName = localStorage.getItem('survey_qqName') || '';
+      qqNumber = savedQQ;
+      // 检测是否刷新过：只要 aliceVisited 标记存在，就是刷新回来的
+      aliceReloaded = localStorage.getItem('survey_aliceVisited') === '1';
+      aliceTriggered = localStorage.getItem('survey_aliceTriggered') === '1';
+      var savedAnswers = localStorage.getItem('survey_answers');
+      if (savedAnswers) {
+        answers = JSON.parse(savedAnswers);
+      }
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+function triggerAliceFlash() {
+  if (typeof document === 'undefined') return;
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+
+  // 播放老电视静电噪音（Web Audio 合成，无需外部文件）
+  try {
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var bufferSize = audioCtx.sampleRate * 0.25; // 0.25秒噪音
+    var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var n = 0; n < bufferSize; n++) {
+      data[n] = (Math.random() * 2 - 1) * 0.4;
+    }
+    var source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    var gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+    setTimeout(function() { try { audioCtx.close(); } catch(e){} }, 400);
+  } catch(e) {}
+
+  var flash = document.createElement('div');
+  flash.className = 'alice-flash';
+
+  // 雪花噪点层
+  var noise = document.createElement('div');
+  noise.className = 'noise';
+  flash.appendChild(noise);
+
+  // 红色条纹噪点
+  var noise2 = document.createElement('div');
+  noise2.className = 'noise2';
+  flash.appendChild(noise2);
+
+  // 扫描线
+  var scanline = document.createElement('div');
+  scanline.className = 'scanline';
+  flash.appendChild(scanline);
+
+  // 满屏堆叠文字
+  var fill = document.createElement('div');
+  fill.className = 'alice-fill';
+  for (var t = 0; t < 120; t++) {
+    var sp = document.createElement('span');
+    sp.textContent = '被发现了';
+    fill.appendChild(sp);
+  }
+  flash.appendChild(fill);
+
+  // 红色闪烁遮罩
+  var overlay = document.createElement('div');
+  overlay.className = 'alice-flash-overlay';
+
+  document.body.appendChild(flash);
+  document.body.appendChild(overlay);
+
+  // 0.2秒后瞬间消失（啪一下）
+  setTimeout(function() {
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    if (flash.parentNode) flash.parentNode.removeChild(flash);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    // 闪屏结束后跳下一题
+    idx++;
+    saveProgress();
+    setTimeout(function() { render(); }, 100);
+  }, 200);
+}
+
+// 播放曼波音效
+function playMambo() {
+  try {
+    var audio = new Audio('/sound.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(function(e){});
+  } catch(e) {}
+}
+
+function startSurvey() {
+  var nameInput = document.getElementById('inputName');
+  var qqInput = document.getElementById('inputQQ');
+  var ok = true;
+
+  // 检测QQ名称
+  var name = nameInput.value.trim();
+  if (!name) {
+    nameInput.classList.add('error');
+    ok = false;
+  } else if (name.length > 20) {
+    nameInput.classList.add('error');
+    showToast('⚠ QQ名称太长了吧，缩到20字以内');
+    ok = false;
+  } else if (/[<>{}\\]/g.test(name)) {
+    nameInput.classList.add('error');
+    showToast('⚠ QQ名称不能包含特殊符号');
+    ok = false;
+  } else {
+    nameInput.classList.remove('error');
+  }
+
+  // 检测QQ号
+  var qq = qqInput.value.trim();
+  if (!qq) {
+    qqInput.classList.add('error');
+    ok = false;
+  } else if (!/^\d+$/.test(qq)) {
+    qqInput.classList.add('error');
+    showToast('⚠ QQ号只能是纯数字');
+    ok = false;
+  } else if (qq.length < 5 || qq.length > 12) {
+    qqInput.classList.add('error');
+    showToast('⚠ QQ号长度不对，正常5~12位');
+    ok = false;
+  } else {
+    qqInput.classList.remove('error');
+  }
+
+  if (!ok) {
+    if (nameInput.classList.contains('error') && qqInput.classList.contains('error')) {
+      showToast('⚠ 请正确填写QQ名称和QQ号');
+    }
+    return;
+  }
+
+  qqName = name;
+  qqNumber = qq;
+
+  // 检查是否有批准/回复
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/api/check?qq=' + encodeURIComponent(qq), true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        showApprovedMsg = data.approved || false;
+        adminReply = data.reply || '';
+      } catch(e) {}
+    }
+    render();
+  };
+  xhr.onerror = function() { render(); };
+  xhr.send();
+}
+
+function render() {
+  var s = document.getElementById('survey');
+
+  if (idx >= QUESTIONS.length) {
+    var extraMsg = '';
+    if (adminReply) {
+      extraMsg += '<div style="margin-top:14px;text-align:left;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 12px;font-size:13px;color:#2e7d32;">📬 <b>管理员回复：</b>' + adminReply.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+    } else if (showApprovedMsg) {
+      extraMsg += '<div style="margin-top:14px;text-align:left;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 12px;font-size:13px;color:#2e7d32;">✅ <b>您的想法被加入了！</b></div>';
+    }
+    s.innerHTML =
+      '<div class="q-card">'+
+        '<div class="q-meta"><span>第 '+(QUESTIONS.length+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">提交确认</span></div>'+
+        '<div class="q-text">以上便是全部题目。<br>确认无误后，请提交答卷。</div>'+
+        extraMsg +
+        '<div style="margin-top:14px;text-align:left;">'+
+          '<label class="info-label" style="margin-bottom:6px;">💬 意见反馈（选填——想新增题目或吐槽都可以）</label>'+
+          '<textarea id="suggestionInput" style="width:100%;padding:12px 14px;border:1px solid #e0dedb;border-radius:6px;font-size:14px;font-family:inherit;background:#fafafa;outline:none;resize:vertical;min-height:70px;transition:border .15s;" placeholder="写下你的意见或建议……" onfocus="this.style.borderColor=\'#0b57d0\';this.style.background=\'#fff\'" onblur="this.style.borderColor=\'#e0dedb\';this.style.background=\'#fafafa\'"></textarea>'+
+        '</div>'+
+        '<button class="btn-submit" onclick="doSubmit()" id="submitBtn">📤 提交答卷</button>'+
+      '</div>';
+    return;
+  }
+
+  var q = QUESTIONS[idx];
+  var pct = Math.round(idx / QUESTIONS.length * 100);
+
+  // 显示 Q0 时标记"已看过爱丽丝题"（用于刷新检测）
+  if (idx === 0) {
+    try {
+      if (!localStorage.getItem('survey_aliceVisited')) {
+        localStorage.setItem('survey_aliceVisited', '1');
+      }
+    } catch(e) {}
+    saveProgress();
+  }
+
+  var html =
+    '<div class="progress"><div class="fill" id="progFill" style="width:'+pct+'%"></div></div>'+
+    '<div class="q-card">'+
+      '<div class="q-meta"><span>第 '+(idx+1)+' / '+(QUESTIONS.length+1)+' 题</span><span class="q-type">单选题 · 共'+q.opts.length+'项</span></div>'+
+      '<div class="q-text" id="qText">'+q.q+'</div>'+
+      '<div id="optList">';
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (var i = 0; i < q.opts.length; i++) {
+    var optText = q.opts[i];
+    var extraClass = '';
+    if (idx === 0 && aliceReloaded) {
+      optText = '爱丽丝·里德尔';
+      extraClass = ' alice-reload';
+    }
+    html += '<button class="q-opt'+extraClass+'" onclick="answer('+i+',this)"><span class="k">'+letters[i]+'</span><span class="t">'+optText+'</span></button>';
+  }
+  html += '</div></div>';
+  s.innerHTML = html;
+}
+
+function answer(i, btn) {
+  if (finished) return;
+
+  var opts = document.querySelectorAll('.q-opt');
+  for (var j = 0; j < opts.length; j++) {
+    opts[j].classList.remove('selected');
+    opts[j].classList.add('disabled');
+  }
+  btn.classList.add('selected');
+  btn.classList.remove('disabled');
+
+  answers[idx] = i;
+
+  /* Q0 恐怖彩蛋：刷新后选择 → 突脸闪屏 */
+  if (idx === 0 && aliceReloaded && !aliceTriggered) {
+    aliceTriggered = true;
+    setTimeout(function() {
+      triggerAliceFlash();
+    }, 150);
+    return; // 闪屏期间不跳题
+  }
+/* Q11 救援特殊逻辑（索引10，显示为第11题） */
+  if (idx === 10) {
+    var showShark = (i === 2);
+    var noManbo = (i !== 1);
+
+    // 选择任何选项都播放音效
+    playMambo();
+
+    setTimeout(function() {
+      if (showShark) {
+        showToast('Shark来了');
+      }
+      if (noManbo) {
+        setTimeout(function() {
+          showToast('群主没了，谁更新啊（哭）');
+        }, showShark ? 1800 : 0);
+      }
+    }, 200);
+  }
+
+  /* Q16 特殊逻辑（索引16，因为前面加了Q0） */
+  if (idx === 16) {
+    if (i === 0) {
+      setTimeout(function() {
+        showToast('原来是一只Shark');
+      }, 200);
+    }
+  }
+
+  idx++;
+  saveProgress();
+  setTimeout(function() {
+    render();
+  }, 300);
+}
+
+function doSubmit() {
+  if (submitting) return;
+  submitting = true;
+
+  var btn = document.getElementById('submitBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ 提交中……';
+  }
+
+  /* 收集答案 */
+  var result = [];
+  for (var i = 0; i < QUESTIONS.length; i++) {
+    var ans = (answers[i] !== undefined && answers[i] !== null) ? answers[i] : -1;
+    result.push({
+      q: i + 1,
+      question: QUESTIONS[i].q,
+      answer: ans,
+      answerText: ans >= 0 ? QUESTIONS[i].opts[ans] : '(未作答)'
+    });
+  }
+
+  var suggestionEl = document.getElementById('suggestionInput');
+  var suggestion = suggestionEl ? suggestionEl.value.trim() : '';
+
+  var payload = {
+    qqName: qqName,
+    qqNumber: qqNumber,
+    answers: result,
+    suggestion: suggestion,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent
+  };
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', '/api/submit', true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      clearProgress();
+      showToast('✅ 提交成功！');
+      var s = document.getElementById('survey');
+      s.innerHTML = '<div class="q-card" style="text-align:center;">' +
+        '<div class="q-text">问卷提交成功！</div>' +
+        '<p style="font-size:14px;color:#666;margin-top:10px;">感谢您的参与，本次共完成 ' + QUESTIONS.length + ' 道题目。</p>' +
+        '<p style="font-size:12px;color:#999;margin-top:6px;">结果已上传，请放心。</p>' +
+        '</div>';
+      setTimeout(function() {
+        renderEnding();
+      }, 800);
+    } else {
+      showToast('❌ 提交失败，请重试');
+      submitting = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '📤 提交答卷';
+      }
+    }
+  };
+  xhr.onerror = function() {
+    showToast('❌ 网络错误，请重试');
+    submitting = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📤 提交答卷';
+    }
+  };
+  xhr.send(JSON.stringify(payload));
+}
+
+function renderEnding() {
+  var s = document.getElementById('survey');
+  s.innerHTML =
+    '<div class="ending">'+
+      '<h2>✅ 问卷提交成功</h2>'+
+      '<p>恭喜你完成了本次群聊调查问卷。</p>'+
+      '<p>以上所有内容均为整活效果，请不必惊慌。</p>'+
+      '<p>感谢参与，祝您在群里玩得愉快。</p>'+
+      '<button class="btn-go" onclick="restartSurvey()">🔄 重新测试</button>'+
+      '<div class="tiny">其实根本没有恐怖元素.jpg</div>'+
+    '</div>';
+}
+
+function restartSurvey() {
+  idx = 0;
+  finished = false;
+  answers = [];
+  submitting = false;
+  showApprovedMsg = false;
+  adminReply = '';
+  clearProgress();
+  render();
+}
+
+/* 初始渲染 */
+/* 输入框样式 */
+var infoStyle = 'input.info-input { display:block; width:100%; padding:12px 14px; margin-bottom:12px; border:1px solid #e0dedb; border-radius:6px; font-size:14px; font-family:inherit; background:#fafafa; outline:none; transition:border .15s; }';
+infoStyle += 'input.info-input:focus { border-color:#0b57d0; background:#fff; }';
+infoStyle += 'input.info-input.error { border-color:#b71c1c; background:#fff5f5; }';
+infoStyle += '.info-label { display:block; font-size:12px; color:#888; margin-bottom:4px; text-align:left; }';
+var styleTag = document.createElement('style');
+styleTag.textContent = infoStyle;
+document.head.appendChild(styleTag);
+
+(function() {
+  var s = document.getElementById('survey');
+
+  // 尝试恢复进度
+  if (loadProgress()) {
+    // 需要检查批准/回复状态
+    if (qqNumber) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/api/check?qq=' + encodeURIComponent(qqNumber), true);
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            showApprovedMsg = data.approved || false;
+            adminReply = data.reply || '';
+          } catch(e) {}
+        }
+        render();
+      };
+      xhr.onerror = function() { render(); };
+      xhr.send();
+    } else {
+      render();
+    }
+    return;
+  }
+
+  s.innerHTML =
+    '<div class="start-card">'+
+      '<p>⚠ 警告：本问卷包含<b>大量恐怖元素</b>，<br>胆小者请在群友陪同下作答。</p>'+
+      '<p>本问卷共 '+QUESTIONS.length+' 题 · 单选 · 全部必答</p>'+
+      '<div style="margin-top:24px;text-align:left;">'+
+        '<label class="info-label">📛 你的QQ名称（昵称）</label>'+
+        '<input class="info-input" id="inputName" type="text" placeholder="请输入你的QQ昵称" maxlength="30">'+
+        '<label class="info-label">🔢 你的QQ号</label>'+
+        '<input class="info-input" id="inputQQ" type="text" placeholder="请输入你的QQ号" maxlength="20" inputmode="numeric">'+
+      '</div>'+
+      '<button class="btn-go" onclick="startSurvey()">开始调查 →</button>'+
+    '</div>';
+})();
+</script>
+</body>
+</html>
