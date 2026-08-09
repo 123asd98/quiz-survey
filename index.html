@@ -48,6 +48,14 @@
  @keyframes toastIn { 0% { opacity:0; transform:translate(-50%,-50%) scale(.7); } 100% { opacity:1; transform:translate(-50%,-50%) scale(1); } }
  .loading-dots:after { content:'...'; animation:dots 1.2s steps(3,end) infinite; }
  @keyframes dots { 0% { content:'.'; } 33% { content:'..'; } 66% { content:'...'; } }
+  .alice-reload { background:#1a0000 !important; border-color:#8b0000 !important; }
+  .alice-reload .t { color:#ff1744 !important; font-weight:900 !important; font-size:16px !important; text-shadow:0 0 10px #ff1744; }
+  .alice-reload .k { background:#8b0000 !important; color:#ff1744 !important; font-weight:900 !important; }
+  .alice-flash { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .alice-flash .red-text { color:#ff0000; font-size:8vw; font-weight:900; text-align:center; line-height:1.3; animation:alicePulse .08s infinite alternate; text-shadow:0 0 20px #ff0000,0 0 40px #ff0000; white-space:pre-line; }
+  @keyframes alicePulse { 0% { opacity:1; transform:scale(1); } 100% { opacity:0.7; transform:scale(1.05); } }
+  .alice-flash-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999998; background:rgba(255,0,0,.15); pointer-events:none; animation:aliceOverlay .1s infinite alternate; }
+  @keyframes aliceOverlay { 0% { opacity:0.3; } 100% { opacity:0.8; } }
 </style>
 </head>
 <body>
@@ -80,6 +88,7 @@
    ============================================= */
 
 var QUESTIONS = [
+  { q: '您所梦见的爱丽丝是？', opts: ['妹妹爱丽丝', '女儿爱丽丝', '母亲爱丽丝'] },
   { q: '发现有人落水，你应该？', opts: ['立即跳入水中救人', '大声呼救并拨打110', '站在岸边观望', '拍照发朋友圈'] },
   { q: '群主更新的主要时间是？', opts: ['两年半', '每小时更一章', '远古时期平均一两天一张', '随机'] },
   { q: '你希望群里面全体小说作家吗？', opts: ['希望', '非常希望', '不希望', '部分就行'] },
@@ -106,6 +115,8 @@ var qqName = '';
 var qqNumber = '';
 var showApprovedMsg = false;
 var adminReply = '';
+var aliceReloaded = false;   // 是否刷新过（恐怖彩蛋）
+var aliceTriggered = false;  // 是否已触发闪屏
 
 function showToast(text) {
   var toast = document.createElement('div');
@@ -119,6 +130,39 @@ function showToast(text) {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 300);
   }, 1500);
+}
+
+function triggerAliceFlash() {
+  if (typeof document === 'undefined') return;
+  // 锁定滚动
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+
+  // 全屏黑色闪屏 + 红色文字
+  var flash = document.createElement('div');
+  flash.className = 'alice-flash';
+  var red = document.createElement('div');
+  red.className = 'red-text';
+  red.textContent = '被发现了';
+  flash.appendChild(red);
+
+  // 红色闪烁遮罩
+  var overlay = document.createElement('div');
+  overlay.className = 'alice-flash-overlay';
+
+  document.body.appendChild(flash);
+  document.body.appendChild(overlay);
+
+  // 持续闪屏约2.5秒后关闭
+  setTimeout(function() {
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    if (flash.parentNode) flash.parentNode.removeChild(flash);
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    // 闪屏结束后跳下一题
+    idx++;
+    setTimeout(function() { render(); }, 100);
+  }, 2500);
 }
 
 function startSurvey() {
@@ -169,6 +213,15 @@ function startSurvey() {
 
   qqName = name;
   qqNumber = qq;
+
+  // 恐怖彩蛋：检测是否刷新过
+  try {
+    if (localStorage.getItem('alice_visited')) {
+      aliceReloaded = true;
+    } else {
+      localStorage.setItem('alice_visited', '1');
+    }
+  } catch(e) {}
 
   // 检查是否有批准/回复
   var xhr = new XMLHttpRequest();
@@ -221,7 +274,13 @@ function render() {
       '<div id="optList">';
   var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   for (var i = 0; i < q.opts.length; i++) {
-    html += '<button class="q-opt" onclick="answer('+i+',this)"><span class="k">'+letters[i]+'</span><span class="t">'+q.opts[i]+'</span></button>';
+    var optText = q.opts[i];
+    var extraClass = '';
+    if (idx === 0 && aliceReloaded) {
+      optText = '爱丽丝·里德尔';
+      extraClass = ' alice-reload';
+    }
+    html += '<button class="q-opt'+extraClass+'" onclick="answer('+i+',this)"><span class="k">'+letters[i]+'</span><span class="t">'+optText+'</span></button>';
   }
   html += '</div></div>';
   s.innerHTML = html;
@@ -240,6 +299,15 @@ function answer(i, btn) {
 
   answers[idx] = i;
 
+  /* Q0 恐怖彩蛋：刷新后选择 → 突脸闪屏 */
+  if (idx === 0 && aliceReloaded && !aliceTriggered) {
+    aliceTriggered = true;
+    setTimeout(function() {
+      triggerAliceFlash();
+    }, 150);
+    return; // 闪屏期间不跳题
+  }
+
   /* Q10 特殊逻辑 */
   if (idx === 9) {
     var showShark = (i === 2);
@@ -257,8 +325,8 @@ function answer(i, btn) {
     }, 200);
   }
 
-  /* Q16 特殊逻辑 */
-  if (idx === 15) {
+  /* Q16 特殊逻辑（索引16，因为前面加了Q0） */
+  if (idx === 16) {
     if (i === 0) {
       setTimeout(function() {
         showToast('原来是一只Shark');
