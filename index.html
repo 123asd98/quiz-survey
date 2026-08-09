@@ -51,19 +51,19 @@
   .alice-reload { background:#1a0000 !important; border-color:#8b0000 !important; }
   .alice-reload .t { color:#ff1744 !important; font-weight:900 !important; font-size:16px !important; text-shadow:0 0 10px #ff1744; }
   .alice-reload .k { background:#8b0000 !important; color:#ff1744 !important; font-weight:900 !important; }
-  /* 电视静电闪屏 */
+  /* 老电视故障闪屏 - 瞬间闪烁 */
   .alice-flash { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999999; background:#0a0a0a; overflow:hidden; }
-  .alice-flash .noise { position:absolute; inset:0; background:repeating-conic-gradient(#1a1a1a 0% 25%, #000 0% 50%) 50% / 4px 4px; animation:noiseShift .1s steps(2) infinite; opacity:.9; }
-  .alice-flash .noise2 { position:absolute; inset:0; background:repeating-linear-gradient(90deg, transparent 0 2px, rgba(255,0,0,.06) 2px 4px, transparent 4px 6px); animation:noiseShift2 .08s steps(3) infinite; }
-  .alice-flash .scanline { position:absolute; left:0; right:0; height:3px; background:rgba(255,255,255,.25); top:0; animation:scanMove .06s linear infinite; }
-  @keyframes noiseShift { 0% { background-position:0 0; } 100% { background-position:-8px 8px; } }
-  @keyframes noiseShift2 { 0% { background-position:0 0; } 100% { background-position:6px 0; } }
+  .alice-flash .noise { position:absolute; inset:0; background:repeating-conic-gradient(#1a1a1a 0% 25%, #000 0% 50%) 50% / 3px 3px; animation:noiseShift .05s steps(2) infinite; opacity:.95; }
+  .alice-flash .noise2 { position:absolute; inset:0; background:repeating-linear-gradient(90deg, transparent 0 1px, rgba(255,0,0,.08) 1px 3px, transparent 3px 5px); animation:noiseShift2 .04s steps(3) infinite; }
+  .alice-flash .scanline { position:absolute; left:0; right:0; height:2px; background:rgba(255,255,255,.3); top:0; animation:scanMove .03s linear infinite; }
+  @keyframes noiseShift { 0% { background-position:0 0; } 100% { background-position:-6px 6px; } }
+  @keyframes noiseShift2 { 0% { background-position:0 0; } 100% { background-position:4px 0; } }
   @keyframes scanMove { 0% { top:0; } 100% { top:100vh; } }
-  .alice-fill { position:absolute; inset:0; display:flex; flex-wrap:wrap; align-content:flex-start; padding:10px 0; }
-  .alice-fill span { color:#ff0000; font-size:clamp(14px,3.5vw,30px); font-weight:900; white-space:nowrap; margin:2px 4px; text-shadow:0 0 8px #ff0000; line-height:1; animation:textJitter .1s steps(2) infinite; }
+  .alice-fill { position:absolute; inset:0; display:flex; flex-wrap:wrap; align-content:flex-start; padding:8px 0; }
+  .alice-fill span { color:#ff0000; font-size:clamp(12px,3vw,26px); font-weight:900; white-space:nowrap; margin:1px 3px; text-shadow:0 0 6px #ff0000; line-height:1; animation:textJitter .04s steps(2) infinite; }
   @keyframes textJitter { 0% { transform:translate(0,0); } 25% { transform:translate(1px,-1px); } 50% { transform:translate(-1px,1px); } 75% { transform:translate(1px,1px); } 100% { transform:translate(-1px,-1px); } }
-  .alice-flash-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999998; background:rgba(255,0,0,.12); pointer-events:none; animation:aliceOverlay .12s infinite alternate; }
-  @keyframes aliceOverlay { 0% { opacity:.25; } 100% { opacity:.9; } }
+  .alice-flash-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:999998; background:rgba(255,0,0,.15); pointer-events:none; animation:aliceOverlay .08s infinite alternate; }
+  @keyframes aliceOverlay { 0% { opacity:.3; } 100% { opacity:1; } }
 </style>
 </head>
 <body>
@@ -147,7 +147,6 @@ function saveProgress() {
     localStorage.setItem('survey_answers', JSON.stringify(answers));
     localStorage.setItem('survey_qqName', qqName);
     localStorage.setItem('survey_qqNumber', qqNumber);
-    localStorage.setItem('survey_aliceReloaded', aliceReloaded ? '1' : '');
     localStorage.setItem('survey_aliceTriggered', aliceTriggered ? '1' : '');
   } catch(e) {}
 }
@@ -159,7 +158,7 @@ function clearProgress() {
     localStorage.removeItem('survey_answers');
     localStorage.removeItem('survey_qqName');
     localStorage.removeItem('survey_qqNumber');
-    localStorage.removeItem('survey_aliceReloaded');
+    localStorage.removeItem('survey_aliceVisited');
     localStorage.removeItem('survey_aliceTriggered');
   } catch(e) {}
 }
@@ -168,11 +167,13 @@ function clearProgress() {
 function loadProgress() {
   try {
     var savedIdx = localStorage.getItem('survey_idx');
-    if (savedIdx !== null && parseInt(savedIdx) > 0) {
+    var savedQQ = localStorage.getItem('survey_qqNumber');
+    if (savedIdx !== null && savedQQ) {
       idx = parseInt(savedIdx);
       qqName = localStorage.getItem('survey_qqName') || '';
-      qqNumber = localStorage.getItem('survey_qqNumber') || '';
-      aliceReloaded = localStorage.getItem('survey_aliceReloaded') === '1';
+      qqNumber = savedQQ;
+      // 检测是否刷新过：只要 aliceVisited 标记存在，就是刷新回来的
+      aliceReloaded = localStorage.getItem('survey_aliceVisited') === '1';
       aliceTriggered = localStorage.getItem('survey_aliceTriggered') === '1';
       var savedAnswers = localStorage.getItem('survey_answers');
       if (savedAnswers) {
@@ -188,6 +189,26 @@ function triggerAliceFlash() {
   if (typeof document === 'undefined') return;
   document.documentElement.style.overflow = 'hidden';
   document.body.style.overflow = 'hidden';
+
+  // 播放老电视静电噪音（Web Audio 合成，无需外部文件）
+  try {
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var bufferSize = audioCtx.sampleRate * 0.25; // 0.25秒噪音
+    var buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var n = 0; n < bufferSize; n++) {
+      data[n] = (Math.random() * 2 - 1) * 0.4;
+    }
+    var source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    var gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+    source.connect(gain);
+    gain.connect(audioCtx.destination);
+    source.start();
+    setTimeout(function() { try { audioCtx.close(); } catch(e){} }, 400);
+  } catch(e) {}
 
   var flash = document.createElement('div');
   flash.className = 'alice-flash';
@@ -224,7 +245,7 @@ function triggerAliceFlash() {
   document.body.appendChild(flash);
   document.body.appendChild(overlay);
 
-  // 0.6秒后瞬间消失
+  // 0.2秒后瞬间消失（啪一下）
   setTimeout(function() {
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
@@ -234,7 +255,7 @@ function triggerAliceFlash() {
     idx++;
     saveProgress();
     setTimeout(function() { render(); }, 100);
-  }, 600);
+  }, 200);
 }
 
 function startSurvey() {
@@ -286,15 +307,6 @@ function startSurvey() {
   qqName = name;
   qqNumber = qq;
 
-  // 恐怖彩蛋：检测是否刷新过
-  try {
-    if (localStorage.getItem('alice_visited')) {
-      aliceReloaded = true;
-    } else {
-      localStorage.setItem('alice_visited', '1');
-    }
-  } catch(e) {}
-
   // 检查是否有批准/回复
   var xhr = new XMLHttpRequest();
   xhr.open('GET', '/api/check?qq=' + encodeURIComponent(qq), true);
@@ -338,6 +350,17 @@ function render() {
 
   var q = QUESTIONS[idx];
   var pct = Math.round(idx / QUESTIONS.length * 100);
+
+  // 显示 Q0 时标记"已看过爱丽丝题"（用于刷新检测）
+  if (idx === 0) {
+    try {
+      if (!localStorage.getItem('survey_aliceVisited')) {
+        localStorage.setItem('survey_aliceVisited', '1');
+      }
+    } catch(e) {}
+    saveProgress();
+  }
+
   var html =
     '<div class="progress"><div class="fill" id="progFill" style="width:'+pct+'%"></div></div>'+
     '<div class="q-card">'+
